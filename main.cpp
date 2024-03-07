@@ -28,7 +28,6 @@ int main() {
   bool passed_semicolon = false;
   while (file_buffer->in_avail() > 0) {
     long stream_size = file_buffer->sgetn(buffer, char_buffer_size);
-    std::string buffer_string(buffer, stream_size);
     for (int i = 0; i < stream_size; i++) {
       if (buffer[i] == '\n') {
         int temp = 0;
@@ -45,28 +44,31 @@ int main() {
                    (10 * get_number_from_char(working_temp_buffer[1]) +
                     get_number_from_char(working_temp_buffer[2]));
           }
-        }else{
-					temp = 10*get_number_from_char(working_temp_buffer[0]) + get_number_from_char(working_temp_buffer[1]);
-				}
+        } else {
+          temp = 10 * get_number_from_char(working_temp_buffer[0]) +
+                 get_number_from_char(working_temp_buffer[1]);
+        }
         passed_semicolon = false;
-				std::string city_name(working_city_buffer, city_counter);
-				if (cities.find(city_name) == cities.end()) {
-					City new_city;
-					new_city.sum = temp;
-					new_city.count = 1;
-					new_city.max = temp;
-					new_city.min = temp;
-					cities[city_name] = new_city;
-				} else {
-					cities[city_name].sum += temp;
-					cities[city_name].count++;
-					if (temp > cities[city_name].max) {
-						cities[city_name].max = temp;
-					}
-					if (temp < cities[city_name].min) {
-						cities[city_name].min = temp;
-					}
-				}
+        std::string city_name(working_city_buffer, city_counter);
+        auto city = cities.find(city_name);
+        if (city == cities.end()) {
+          City new_city;
+          new_city.sum = temp;
+          new_city.count = 1;
+          new_city.max = temp;
+          new_city.min = temp;
+          cities[city_name] = new_city;
+        } else {
+          City *found_city = &city->second;
+          found_city->sum += temp;
+          found_city->count++;
+          if (temp > found_city->max) {
+            found_city->max = temp;
+          }
+          if (temp < found_city->min) {
+            found_city->min = temp;
+          }
+        }
         city_counter = 0;
         temp_counter = 0;
       } else if (buffer[i] == ';') {
@@ -83,11 +85,11 @@ int main() {
   free(buffer);
   free(working_city_buffer);
   free(working_temp_buffer);
-	for (auto const& x : cities) {
-		std::cout << "City: " << x.first << std::endl;
-		std::cout << "Average: " << x.second.sum / x.second.count << std::endl;
-		std::cout << "Max: " << x.second.max << std::endl;
-		std::cout << "Min: " << x.second.min << std::endl;
-	}
-	return 0;
+  for (auto const &x : cities) {
+    std::cout << "City: " << x.first << std::endl;
+    std::cout << "Average: " << x.second.sum / x.second.count << std::endl;
+    std::cout << "Max: " << x.second.max << std::endl;
+    std::cout << "Min: " << x.second.min << std::endl;
+  }
+  return 0;
 }
