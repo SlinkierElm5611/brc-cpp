@@ -19,8 +19,6 @@ int main() {
   std::unordered_map<std::string, City> cities;
   std::ifstream file("measurements.txt");
   std::streambuf *file_buffer = file.rdbuf();
-  long buffer_size = file_buffer->in_avail();
-  std::cout << "Buffer size: " << buffer_size << std::endl;
   char buffer[CHAR_BUFFER_SIZE];
   char working_city_buffer[100];
   char working_temp_buffer[4];
