@@ -4,6 +4,8 @@
 #include <string>
 #include <unordered_map>
 
+#define CHAR_BUFFER_SIZE 1000000
+
 struct City {
   int sum;
   int count;
@@ -14,20 +16,19 @@ struct City {
 char get_number_from_char(char c) { return c - '0'; }
 
 int main() {
-  int char_buffer_size = 1000000;
   std::unordered_map<std::string, City> cities;
   std::ifstream file("measurements.txt");
   std::streambuf *file_buffer = file.rdbuf();
   long buffer_size = file_buffer->in_avail();
   std::cout << "Buffer size: " << buffer_size << std::endl;
-  char *buffer = new char[char_buffer_size];
-  char *working_city_buffer = new char[100];
-  char *working_temp_buffer = new char[4];
+  char buffer[CHAR_BUFFER_SIZE];
+  char working_city_buffer[100];
+  char working_temp_buffer[4];
   int city_counter = 0;
   int temp_counter = 0;
   bool passed_semicolon = false;
   while (file_buffer->in_avail() > 0) {
-    long stream_size = file_buffer->sgetn(buffer, char_buffer_size);
+    long stream_size = file_buffer->sgetn(buffer, CHAR_BUFFER_SIZE);
     for (int i = 0; i < stream_size; i++) {
       if (buffer[i] == '\n') {
         int temp = 0;
@@ -82,9 +83,6 @@ int main() {
       }
     }
   }
-  free(buffer);
-  free(working_city_buffer);
-  free(working_temp_buffer);
   for (auto const &x : cities) {
     std::cout << "City: " << x.first << std::endl;
     std::cout << "Average: " << x.second.sum / x.second.count << std::endl;
