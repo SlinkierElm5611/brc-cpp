@@ -75,7 +75,7 @@ int main() {
       } else if (!passed_semicolon) {
         working_city_buffer[city_counter] = buffer[i];
         city_counter++;
-      } else if (passed_semicolon && buffer[i] != '.') {
+      } else if (buffer[i] != '.') {
         working_temp_buffer[temp_counter] = buffer[i];
         temp_counter++;
       }
