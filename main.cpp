@@ -4,7 +4,7 @@
 #include <string>
 #include <unordered_map>
 
-#define CHAR_BUFFER_SIZE 1000000
+#define CHAR_BUFFER_SIZE 100000
 
 struct City {
   int sum;
@@ -22,8 +22,8 @@ int main() {
   char buffer[CHAR_BUFFER_SIZE];
   char working_city_buffer[100];
   char working_temp_buffer[4];
-  int city_counter = 0;
-  int temp_counter = 0;
+  short city_counter = 0;
+  short temp_counter = 0;
   bool passed_semicolon = false;
   while (file_buffer->in_avail() > 0) {
     long stream_size = file_buffer->sgetn(buffer, CHAR_BUFFER_SIZE);
