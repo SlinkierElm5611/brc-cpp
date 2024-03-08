@@ -18,16 +18,20 @@ char get_number_from_char(char c) { return c - '0'; }
 int main() {
   std::unordered_map<std::string, City> cities;
   std::ifstream file("measurements.txt");
+	file.seekg(0, std::ios::end);
+	long file_size = file.tellg();
+	file.seekg(0, std::ios::beg);
   std::streambuf *file_buffer = file.rdbuf();
-  char buffer[CHAR_BUFFER_SIZE];
+  char* buffer = new char[file_size];
   char working_city_buffer[100];
   char working_temp_buffer[4];
   short city_counter = 0;
   short temp_counter = 0;
   bool passed_semicolon = false;
-  while (file_buffer->in_avail() > 0) {
-    long stream_size = file_buffer->sgetn(buffer, CHAR_BUFFER_SIZE);
-    for (int i = 0; i < stream_size; i++) {
+	long buffer_index = 0;
+  while (buffer_index < file_size) {
+    long stream_size = file_buffer->sgetn(buffer + buffer_index, CHAR_BUFFER_SIZE);
+    for (long i = buffer_index; i < buffer_index+stream_size; i++) {
       if (buffer[i] == '\n') {
         int temp = 0;
         if (temp_counter == 4) {
@@ -80,6 +84,7 @@ int main() {
         temp_counter++;
       }
     }
+		buffer_index+=stream_size;
   }
   for (auto const &x : cities) {
     std::cout << "City: " << x.first << std::endl;
@@ -87,5 +92,6 @@ int main() {
     std::cout << "Max: " << x.second.max << std::endl;
     std::cout << "Min: " << x.second.min << std::endl;
   }
+	free(buffer);
   return 0;
 }
