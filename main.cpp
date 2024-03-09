@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #define CHAR_BUFFER_SIZE 100000
+#define THREADS 8
 
 struct City {
   int sum;
@@ -16,6 +17,7 @@ struct City {
 char get_number_from_char(char c) { return c - '0'; }
 
 int main() {
+  std::unordered_map<std::string, City> cities_threads[THREADS];
   std::unordered_map<std::string, City> cities;
   std::ifstream file("measurements.txt");
 	file.seekg(0, std::ios::end);
