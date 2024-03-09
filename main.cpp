@@ -79,9 +79,10 @@ void thread_worker(std::unordered_map<std::string, City>& cities,
               found_city->min = temp;
             }
           }
-          city_counter = 0;
-          temp_counter = 0;
         }
+				city_counter = 0;
+				temp_counter = 0;
+				passed_semicolon = false;
       } else if (buffer[i] == ';') {
         passed_semicolon = true;
       } else if (!passed_semicolon) {
