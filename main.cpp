@@ -6,6 +6,8 @@
 #include <unordered_map>
 
 #define CHAR_BUFFER_SIZE 1000000
+#define MAX_CITY_NAME_SIZE 100
+#define MAX_NUM_KEYS 10000
 #define THREADS 20
 
 struct City {
@@ -30,7 +32,7 @@ void thread_worker(std::unordered_map<std::string, City> &cities,
   std::ifstream file("measurements.txt");
   file.seekg(read_start);
   std::streambuf *file_buffer = file.rdbuf();
-  char working_city_buffer[100];
+  char working_city_buffer[MAX_CITY_NAME_SIZE];
   char working_temp_buffer[4];
   char buffer[CHAR_BUFFER_SIZE];
   short city_counter = 0;
@@ -106,6 +108,9 @@ void thread_worker(std::unordered_map<std::string, City> &cities,
 
 int main() {
   std::unordered_map<std::string, City> cities_threads[THREADS];
+	for (int i = 1; i < THREADS; i++) {
+		cities_threads[i].reserve(MAX_NUM_KEYS);
+	}
   std::thread threads[THREADS];
   long compute_end[THREADS];
   std::ifstream file("measurements.txt");
