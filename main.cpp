@@ -68,26 +68,26 @@ void thread_worker(google::dense_hash_map<std::string, City> &cities,
                    get_number_from_char(working_temp_buffer[1]);
           }
           passed_semicolon = false;
-          //std::string city_name(working_city_buffer, city_counter);
-          //auto city = cities.find(city_name);
-          //if (city == cities.end()) {
-          //  City new_city;
-          //  new_city.sum = temp;
-          //  new_city.count = 1;
-          //  new_city.max = temp;
-          //  new_city.min = temp;
-          //  cities[city_name] = new_city;
-          //} else {
-          //  City *found_city = &city->second;
-          //  found_city->sum += temp;
-          //  found_city->count++;
-          //  if (temp > found_city->max) {
-          //    found_city->max = temp;
-          //  }
-          //  if (temp < found_city->min) {
-          //    found_city->min = temp;
-          //  }
-          //}
+          std::string city_name(working_city_buffer, city_counter);
+          auto city = cities.find(city_name);
+          if (city == cities.end()) {
+            City new_city;
+            new_city.sum = temp;
+            new_city.count = 1;
+            new_city.max = temp;
+            new_city.min = temp;
+						cities[city_name] = new_city;
+          } else {
+            City *found_city = &city->second;
+            found_city->sum += temp;
+            found_city->count++;
+            if (temp > found_city->max) {
+              found_city->max = temp;
+            }
+            if (temp < found_city->min) {
+              found_city->min = temp;
+            }
+          }
         }
         city_counter = 0;
         temp_counter = 0;
@@ -108,7 +108,7 @@ void thread_worker(google::dense_hash_map<std::string, City> &cities,
 
 int main() {
 	google::dense_hash_map<std::string, City> cities_threads[THREADS];
-	for (int i = 1; i < THREADS; i++) {
+	for (int i = 0; i < THREADS; i++) {
 		cities_threads[i].set_empty_key("");
 	}
   std::thread threads[THREADS];
@@ -125,25 +125,5 @@ int main() {
   for (int i = 0; i < THREADS; i++) {
     threads[i].join();
   }
-  //std::cout << "Finished Computation and Reading" << std::endl;
-  //for (int i = 1; i < THREADS; i++) {
-	//	for (auto &city : cities_threads[i]) {
-	//		City *found_city = &cities_threads[0][city.first];
-	//		found_city->sum += city.second.sum;
-	//		found_city->count += city.second.count;
-	//		if (city.second.max > found_city->max) {
-	//			found_city->max = city.second.max;
-	//		}
-	//		if (city.second.min < found_city->min) {
-	//			found_city->min = city.second.min;
-	//		}
-	//	}
-  //}
-  //for (auto &city : cities_threads[0]) {
-  //  std::cout << city.first << " " << city.second.sum << " "
-  //            << city.second.count << " " << city.second.max << " "
-  //            << city.second.min << std::endl;
-  //}
-	//std::cout << "Finished Merging" << std::endl;
   return 0;
 }
