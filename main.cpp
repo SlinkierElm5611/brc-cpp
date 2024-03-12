@@ -108,7 +108,7 @@ void thread_worker(std::unordered_map<std::string, City> &cities,
 
 int main() {
   std::unordered_map<std::string, City> cities_threads[THREADS];
-	for (int i = 1; i < THREADS; i++) {
+	for (int i = 0; i < THREADS; i++) {
 		cities_threads[i].reserve(MAX_NUM_KEYS);
 	}
   std::thread threads[THREADS];
