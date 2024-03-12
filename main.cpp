@@ -8,7 +8,6 @@
 #define CHAR_BUFFER_SIZE 1000000
 #define MAX_CITY_NAME_SIZE 100
 #define MAX_NUM_KEYS 10000
-#define THREADS 32
 
 struct City {
   int sum;
@@ -120,12 +119,13 @@ void thread_worker(std::unordered_map<std::string, City, HashFn> &cities,
 }
 
 int main() {
+	const unsigned int THREADS = std::thread::hardware_concurrency();
   std::unordered_map<std::string, City, HashFn> cities_threads[THREADS];
   for (int i = 0; i < THREADS; i++) {
     cities_threads[i].reserve(MAX_NUM_KEYS);
   }
-  std::thread threads[THREADS];
-  long compute_end[THREADS];
+  std::thread* threads = new std::thread[THREADS];
+  long* compute_end=new long[THREADS];
   std::ifstream file("measurements.txt");
   file.seekg(0, std::ios::end);
   long file_size = file.tellg();
@@ -158,5 +158,7 @@ int main() {
               << city.second.min << std::endl;
   }
   std::cout << "Finished Merging" << std::endl;
+	delete[] threads;
+	delete[] compute_end;
   return 0;
 }
