@@ -1,9 +1,11 @@
-#include <fstream>
+#include <cstdio>
 #include <iostream>
-#include <streambuf>
 #include <string>
+#include <sys/mman.h>
 #include <thread>
 #include <unordered_map>
+#include <unistd.h>
+#include <fcntl.h>
 
 #define CHAR_BUFFER_SIZE 1000000
 #define MAX_CITY_NAME_SIZE 100
@@ -40,82 +42,73 @@ public:
   }
 };
 void thread_worker(std::unordered_map<std::string, City, HashFn> &cities,
-                   long read_start, long *compute_end, short thread_id) {
-  std::ifstream file("measurements.txt");
-  file.seekg(read_start);
-  std::streambuf *file_buffer = file.rdbuf();
+                   long read_start, long *compute_end, short thread_id, void* map_ptr) {
   char working_city_buffer[MAX_CITY_NAME_SIZE];
   char working_temp_buffer[4];
-  char buffer[CHAR_BUFFER_SIZE];
+	char *buffer = (char*)map_ptr;
   short city_counter = 0;
   short temp_counter = 0;
   bool passed_semicolon = false;
   bool first_newline_found = false;
-  long buffer_index = read_start;
-  while (buffer_index < compute_end[thread_id]) {
-    long stream_size = file_buffer->sgetn(
-        buffer, get_next_read_size(buffer_index, compute_end[thread_id]));
-    for (long i = 0; i < stream_size; i++) {
-      if (buffer[i] == '\n') {
-        if (!first_newline_found and thread_id > 0) {
-          first_newline_found = true;
-          compute_end[thread_id - 1] = i + buffer_index;
-        } else {
-          int temp = 0;
-          if (temp_counter == 4) {
-            temp = -1 * (100 * get_number_from_char(working_temp_buffer[1]) +
-                         (10 * get_number_from_char(working_temp_buffer[2]) +
-                          get_number_from_char(working_temp_buffer[3])));
-          } else if (temp_counter == 3) {
-            if (working_temp_buffer[0] == '-') {
-              temp = -1 * (10 * get_number_from_char(working_temp_buffer[1]) +
-                           get_number_from_char(working_temp_buffer[2]));
-            } else {
-              temp = 100 * get_number_from_char(working_temp_buffer[0]) +
-                     (10 * get_number_from_char(working_temp_buffer[1]) +
-                      get_number_from_char(working_temp_buffer[2]));
-            }
-          } else {
-            temp = 10 * get_number_from_char(working_temp_buffer[0]) +
-                   get_number_from_char(working_temp_buffer[1]);
-          }
-          passed_semicolon = false;
-          std::string city_name(working_city_buffer, city_counter);
-          auto city = cities.find(city_name);
-          if (city == cities.end()) {
-            City new_city;
-            new_city.sum = temp;
-            new_city.count = 1;
-            new_city.max = temp;
-            new_city.min = temp;
-            cities[city_name] = new_city;
-          } else {
-            City *found_city = &city->second;
-            found_city->sum += temp;
-            found_city->count++;
-            if (temp > found_city->max) {
-              found_city->max = temp;
-            }
-            if (temp < found_city->min) {
-              found_city->min = temp;
-            }
-          }
-        }
-        city_counter = 0;
-        temp_counter = 0;
-        passed_semicolon = false;
-      } else if (buffer[i] == ';') {
-        passed_semicolon = true;
-      } else if (!passed_semicolon) {
-        working_city_buffer[city_counter] = buffer[i];
-        city_counter++;
-      } else if (buffer[i] != '.') {
-        working_temp_buffer[temp_counter] = buffer[i];
-        temp_counter++;
-      }
-    }
-    buffer_index += stream_size;
-  }
+	for (long i = read_start; i < compute_end[thread_id]; i++) {
+		if (buffer[i] == '\n') {
+			if (!first_newline_found and thread_id > 0) {
+				first_newline_found = true;
+				compute_end[thread_id - 1] = i;
+			} else {
+				int temp = 0;
+				if (temp_counter == 4) {
+					temp = -1 * (100 * get_number_from_char(working_temp_buffer[1]) +
+											 (10 * get_number_from_char(working_temp_buffer[2]) +
+												get_number_from_char(working_temp_buffer[3])));
+				} else if (temp_counter == 3) {
+					if (working_temp_buffer[0] == '-') {
+						temp = -1 * (10 * get_number_from_char(working_temp_buffer[1]) +
+												 get_number_from_char(working_temp_buffer[2]));
+					} else {
+						temp = 100 * get_number_from_char(working_temp_buffer[0]) +
+									 (10 * get_number_from_char(working_temp_buffer[1]) +
+										get_number_from_char(working_temp_buffer[2]));
+					}
+				} else {
+					temp = 10 * get_number_from_char(working_temp_buffer[0]) +
+								 get_number_from_char(working_temp_buffer[1]);
+				}
+				passed_semicolon = false;
+				std::string city_name(working_city_buffer, city_counter);
+				auto city = cities.find(city_name);
+				if (city == cities.end()) {
+					City new_city;
+					new_city.sum = temp;
+					new_city.count = 1;
+					new_city.max = temp;
+					new_city.min = temp;
+					cities[city_name] = new_city;
+				} else {
+					City *found_city = &city->second;
+					found_city->sum += temp;
+					found_city->count++;
+					if (temp > found_city->max) {
+						found_city->max = temp;
+					}
+					if (temp < found_city->min) {
+						found_city->min = temp;
+					}
+				}
+			}
+			city_counter = 0;
+			temp_counter = 0;
+			passed_semicolon = false;
+		} else if (buffer[i] == ';') {
+			passed_semicolon = true;
+		} else if (!passed_semicolon) {
+			working_city_buffer[city_counter] = buffer[i];
+			city_counter++;
+		} else if (buffer[i] != '.') {
+			working_temp_buffer[temp_counter] = buffer[i];
+			temp_counter++;
+		}
+	}
 }
 
 int main() {
@@ -126,14 +119,14 @@ int main() {
   }
   std::thread* threads = new std::thread[THREADS];
   long* compute_end=new long[THREADS];
-  std::ifstream file("measurements.txt");
-  file.seekg(0, std::ios::end);
-  long file_size = file.tellg();
-  file.seekg(0, std::ios::beg);
+	int fd = open("measurements.txt", O_RDONLY);
+	size_t file_size=lseek(fd,0,SEEK_END);
+	void* map_ptr;
+	map_ptr=mmap(NULL,file_size,PROT_READ,MAP_SHARED,fd,0);
   for (int i = 0; i < THREADS; i++) {
     compute_end[i] = (i + 1) * (file_size / THREADS);
     threads[i] = std::thread(thread_worker, std::ref(cities_threads[i]),
-                             i * (file_size / THREADS), compute_end, i);
+                             i * (file_size / THREADS), compute_end, i, map_ptr);
   }
   for (int i = 0; i < THREADS; i++) {
     threads[i].join();
@@ -158,6 +151,8 @@ int main() {
               << city.second.min << std::endl;
   }
   std::cout << "Finished Merging" << std::endl;
+	munmap(map_ptr,file_size);
+	close(fd);
 	delete[] threads;
 	delete[] compute_end;
   return 0;
