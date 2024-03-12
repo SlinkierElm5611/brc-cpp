@@ -28,16 +28,16 @@ long get_next_read_size(long current_index, long compute_end) {
 }
 
 class HashFn {
-	public:
+public:
   size_t operator()(const std::string &key) const {
-		unsigned long hash = 5381;
-		for (int i = 0; i < MAX_CITY_NAME_SIZE; i++) {
-			if (i >= key.size()) {
-				break;
-			}
-			hash = ((hash << 5) + hash) + key[i];
-		}
-		return hash;
+    unsigned long hash = 5381;
+    for (int i = 0; i < MAX_CITY_NAME_SIZE; i++) {
+      if (i >= key.size()) {
+        break;
+      }
+      hash = ((hash << 5) + hash) + key[i];
+    }
+    return hash;
   }
 };
 void thread_worker(std::unordered_map<std::string, City, HashFn> &cities,
