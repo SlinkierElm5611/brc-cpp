@@ -125,5 +125,25 @@ int main() {
   for (int i = 0; i < THREADS; i++) {
     threads[i].join();
   }
+  std::cout << "Finished Computation and Reading" << std::endl;
+  for (int i = 1; i < THREADS; i++) {
+		for (auto &city : cities_threads[i]) {
+			City *found_city = &cities_threads[0][city.first];
+			found_city->sum += city.second.sum;
+			found_city->count += city.second.count;
+			if (city.second.max > found_city->max) {
+				found_city->max = city.second.max;
+			}
+			if (city.second.min < found_city->min) {
+				found_city->min = city.second.min;
+			}
+		}
+  }
+  for (auto &city : cities_threads[0]) {
+    std::cout << city.first << " " << city.second.sum << " "
+              << city.second.count << " " << city.second.max << " "
+              << city.second.min << std::endl;
+  }
+	std::cout << "Finished Merging" << std::endl;
   return 0;
 }
