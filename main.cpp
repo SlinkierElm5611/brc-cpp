@@ -8,7 +8,7 @@
 #define CHAR_BUFFER_SIZE 1000000
 #define MAX_CITY_NAME_SIZE 100
 #define MAX_NUM_KEYS 10000
-#define THREADS 20
+#define THREADS 32
 
 struct City {
   int sum;
@@ -27,7 +27,20 @@ long get_next_read_size(long current_index, long compute_end) {
   return next_read_size;
 }
 
-void thread_worker(std::unordered_map<std::string, City> &cities,
+class HashFn {
+	public:
+  size_t operator()(const std::string &key) const {
+		unsigned long hash = 5381;
+		for (int i = 0; i < MAX_CITY_NAME_SIZE; i++) {
+			if (i >= key.size()) {
+				break;
+			}
+			hash = ((hash << 5) + hash) + key[i];
+		}
+		return hash;
+  }
+};
+void thread_worker(std::unordered_map<std::string, City, HashFn> &cities,
                    long read_start, long *compute_end, short thread_id) {
   std::ifstream file("measurements.txt");
   file.seekg(read_start);
@@ -107,10 +120,10 @@ void thread_worker(std::unordered_map<std::string, City> &cities,
 }
 
 int main() {
-  std::unordered_map<std::string, City> cities_threads[THREADS];
-	for (int i = 0; i < THREADS; i++) {
-		cities_threads[i].reserve(MAX_NUM_KEYS);
-	}
+  std::unordered_map<std::string, City, HashFn> cities_threads[THREADS];
+  for (int i = 0; i < THREADS; i++) {
+    cities_threads[i].reserve(MAX_NUM_KEYS);
+  }
   std::thread threads[THREADS];
   long compute_end[THREADS];
   std::ifstream file("measurements.txt");
@@ -127,23 +140,23 @@ int main() {
   }
   std::cout << "Finished Computation and Reading" << std::endl;
   for (int i = 1; i < THREADS; i++) {
-		for (auto &city : cities_threads[i]) {
-			City *found_city = &cities_threads[0][city.first];
-			found_city->sum += city.second.sum;
-			found_city->count += city.second.count;
-			if (city.second.max > found_city->max) {
-				found_city->max = city.second.max;
-			}
-			if (city.second.min < found_city->min) {
-				found_city->min = city.second.min;
-			}
-		}
+    for (auto &city : cities_threads[i]) {
+      City *found_city = &cities_threads[0][city.first];
+      found_city->sum += city.second.sum;
+      found_city->count += city.second.count;
+      if (city.second.max > found_city->max) {
+        found_city->max = city.second.max;
+      }
+      if (city.second.min < found_city->min) {
+        found_city->min = city.second.min;
+      }
+    }
   }
   for (auto &city : cities_threads[0]) {
     std::cout << city.first << " " << city.second.sum << " "
               << city.second.count << " " << city.second.max << " "
               << city.second.min << std::endl;
   }
-	std::cout << "Finished Merging" << std::endl;
+  std::cout << "Finished Merging" << std::endl;
   return 0;
 }
