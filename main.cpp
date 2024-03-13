@@ -1,4 +1,3 @@
-#include <emmintrin.h>
 #include <fstream>
 #include <immintrin.h>
 #include <iostream>
