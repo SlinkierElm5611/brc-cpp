@@ -4,6 +4,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <immintrin.h>
 
 #define CHAR_BUFFER_SIZE 1000000
 #define MAX_CITY_NAME_SIZE 100
@@ -160,5 +161,13 @@ int main() {
   std::cout << "Finished Merging" << std::endl;
 	delete[] threads;
 	delete[] compute_end;
+	__m256i a = _mm256_setr_epi32(1, 2, 3, 4, 5, 6, 7, 8);
+	__m256i b = _mm256_setr_epi32(1, 2, 3, 4, 5, 6, 7, 8);
+	__m256i c = _mm256_add_epi32(a, b);
+	int* result = (int*)&c;
+	for (int i = 0; i < 8; i++) {
+		std::cout << result[i] << " ";
+	}
+	std::cout << std::endl;
   return 0;
 }
