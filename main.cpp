@@ -26,21 +26,21 @@ int get_number_from_chars(const char *c, char size) {
 	numbers = _mm_sub_epi32(numbers, operations_vector);
 	if (size == 4) {
 		__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(0, -100, -10, -1));
-		int *results = (int *)&result;
+		const int *results = (int *)&result;
 		return results[1] + results[2] + results[3];
 	}else if (size == 3) {
 		if (c[0] == '-') {
 			__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(0, -10, -1, 0));
-			int *results = (int *)&result;
+			const int *results = (int *)&result;
 			return results[1] + results[2];
 		} else {
 			__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(100, 10, 1, 0));
-			int *results = (int *)&result;
+			const int *results = (int *)&result;
 			return results[0] + results[1] + results[2];
 		}
 	}
 	__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(10, 1, 0, 0));
-	int *results = (int *)&result;
+	const int *results = (int *)&result;
 	return results[0] + results[1];
 }
 
