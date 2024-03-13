@@ -34,7 +34,7 @@ int get_number_from_chars(const char *c, char size) {
 			int *results = (int *)&result;
 			return results[1] + results[2];
 		} else {
-			__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(0, 100, 10, 1));
+			__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(100, 10, 1, 0));
 			int *results = (int *)&result;
 			return results[0] + results[1] + results[2];
 		}
