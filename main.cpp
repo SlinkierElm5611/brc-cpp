@@ -1,4 +1,5 @@
 #include <fstream>
+#include <immintrin.h>
 #include <iostream>
 #include <streambuf>
 #include <string>
@@ -17,6 +18,30 @@ struct City {
 };
 
 char get_number_from_char(char c) { return c - '0'; }
+
+int get_number_from_chars(const char *c, char size) {
+  __m128i numbers = _mm_setr_epi32(c[0], c[1], c[2], c[3]);
+  __m128i operations_vector = _mm_setr_epi32('0','0','0','0');
+	numbers = _mm_sub_epi32(numbers, operations_vector);
+	if (size == 4) {
+		__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(0, -100, -10, -1));
+		const int *results = (int *)&result;
+		return results[1] + results[2] + results[3];
+	}else if (size == 3) {
+		if (c[0] == '-') {
+			__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(0, -10, -1, 0));
+			const int *results = (int *)&result;
+			return results[1] + results[2];
+		} else {
+			__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(100, 10, 1, 0));
+			const int *results = (int *)&result;
+			return results[0] + results[1] + results[2];
+		}
+	}
+	__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(10, 1, 0, 0));
+	const int *results = (int *)&result;
+	return results[0] + results[1];
+}
 
 long get_next_read_size(long current_index, long compute_end) {
   long next_read_size = compute_end - current_index;
@@ -47,8 +72,8 @@ void thread_worker(std::unordered_map<std::string, City, HashFn> &cities,
   char working_city_buffer[MAX_CITY_NAME_SIZE];
   char working_temp_buffer[4];
   char buffer[CHAR_BUFFER_SIZE];
-  short city_counter = 0;
-  short temp_counter = 0;
+  char city_counter = 0;
+  char temp_counter = 0;
   bool passed_semicolon = false;
   bool first_newline_found = false;
   long buffer_index = read_start;
@@ -61,24 +86,7 @@ void thread_worker(std::unordered_map<std::string, City, HashFn> &cities,
           first_newline_found = true;
           compute_end[thread_id - 1] = i + buffer_index;
         } else {
-          int temp = 0;
-          if (temp_counter == 4) {
-            temp = -1 * (100 * get_number_from_char(working_temp_buffer[1]) +
-                         (10 * get_number_from_char(working_temp_buffer[2]) +
-                          get_number_from_char(working_temp_buffer[3])));
-          } else if (temp_counter == 3) {
-            if (working_temp_buffer[0] == '-') {
-              temp = -1 * (10 * get_number_from_char(working_temp_buffer[1]) +
-                           get_number_from_char(working_temp_buffer[2]));
-            } else {
-              temp = 100 * get_number_from_char(working_temp_buffer[0]) +
-                     (10 * get_number_from_char(working_temp_buffer[1]) +
-                      get_number_from_char(working_temp_buffer[2]));
-            }
-          } else {
-            temp = 10 * get_number_from_char(working_temp_buffer[0]) +
-                   get_number_from_char(working_temp_buffer[1]);
-          }
+          int temp = get_number_from_chars(working_temp_buffer, temp_counter);
           passed_semicolon = false;
           std::string city_name(working_city_buffer, city_counter);
           auto city = cities.find(city_name);
@@ -119,13 +127,13 @@ void thread_worker(std::unordered_map<std::string, City, HashFn> &cities,
 }
 
 int main() {
-	const unsigned int THREADS = std::thread::hardware_concurrency();
+  const unsigned int THREADS = std::thread::hardware_concurrency();
   std::unordered_map<std::string, City, HashFn> cities_threads[THREADS];
   for (int i = 0; i < THREADS; i++) {
     cities_threads[i].reserve(MAX_NUM_KEYS);
   }
-  std::thread* threads = new std::thread[THREADS];
-  long* compute_end=new long[THREADS];
+  std::thread *threads = new std::thread[THREADS];
+  long *compute_end = new long[THREADS];
   std::ifstream file("measurements.txt");
   file.seekg(0, std::ios::end);
   long file_size = file.tellg();
@@ -158,7 +166,7 @@ int main() {
               << city.second.min << std::endl;
   }
   std::cout << "Finished Merging" << std::endl;
-	delete[] threads;
-	delete[] compute_end;
+  delete[] threads;
+  delete[] compute_end;
   return 0;
 }
