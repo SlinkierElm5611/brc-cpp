@@ -17,7 +17,35 @@ struct City {
   int min;
 };
 
-char get_number_from_char(char c) { return c - '0'; }
+struct CityString{
+	char name[MAX_CITY_NAME_SIZE];
+	int size;
+	bool operator==(const CityString& other) const {
+		if (size != other.size) {
+			return false;
+		}
+		for (int i = 0; i < size; i++) {
+			if (name[i] != other.name[i]) {
+				return false;
+			}
+		}
+		return true;
+	}
+};
+
+class CityStringHashFn{
+public:
+	size_t operator()(const CityString& key) const {
+		unsigned long hash = 5381;
+		for (int i = 0; i < MAX_CITY_NAME_SIZE; i++) {
+			if (i >= key.size) {
+				break;
+			}
+			hash = ((hash << 5) + hash) + key.name[i];
+		}
+		return hash;
+	}
+};
 
 int get_number_from_chars(const char *c, char size) {
   __m128i numbers = _mm_setr_epi32(c[0], c[1], c[2], c[3]);
@@ -51,20 +79,7 @@ long get_next_read_size(long current_index, long compute_end) {
   return next_read_size;
 }
 
-class HashFn {
-public:
-  size_t operator()(const std::string &key) const {
-    unsigned long hash = 5381;
-    for (int i = 0; i < MAX_CITY_NAME_SIZE; i++) {
-      if (i >= key.size()) {
-        break;
-      }
-      hash = ((hash << 5) + hash) + key[i];
-    }
-    return hash;
-  }
-};
-void thread_worker(std::unordered_map<std::string, City, HashFn> &cities,
+void thread_worker(std::unordered_map<CityString, City, CityStringHashFn> &cities,
                    long read_start, long *compute_end, short thread_id) {
   std::ifstream file("measurements.txt");
   file.seekg(read_start);
@@ -88,7 +103,11 @@ void thread_worker(std::unordered_map<std::string, City, HashFn> &cities,
         } else {
           int temp = get_number_from_chars(working_temp_buffer, temp_counter);
           passed_semicolon = false;
-          std::string city_name(working_city_buffer, city_counter);
+					CityString city_name;
+					city_name.size = city_counter;
+					for (int j = 0; j < city_counter; j++) {
+						city_name.name[j] = working_city_buffer[j];
+					}
           auto city = cities.find(city_name);
           if (city == cities.end()) {
             City new_city;
@@ -128,7 +147,7 @@ void thread_worker(std::unordered_map<std::string, City, HashFn> &cities,
 
 int main() {
   const unsigned int THREADS = std::thread::hardware_concurrency();
-  std::unordered_map<std::string, City, HashFn> cities_threads[THREADS];
+  std::unordered_map<CityString, City, CityStringHashFn> cities_threads[THREADS];
   for (int i = 0; i < THREADS; i++) {
     cities_threads[i].reserve(MAX_NUM_KEYS);
   }
@@ -161,7 +180,7 @@ int main() {
     }
   }
   for (auto &city : cities_threads[0]) {
-    std::cout << city.first << " " << city.second.sum << " "
+    std::cout << std::string(city.first.name, city.first.size) << " " << city.second.sum << " "
               << city.second.count << " " << city.second.max << " "
               << city.second.min << std::endl;
   }
