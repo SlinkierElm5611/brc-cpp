@@ -1,3 +1,4 @@
+#include <cmath>
 #include <fstream>
 #include <immintrin.h>
 #include <iostream>
@@ -17,30 +18,63 @@ struct City {
   int min;
 };
 
-char get_number_from_char(char c) { return c - '0'; }
+struct CityString {
+  char name[MAX_CITY_NAME_SIZE];
+  int size;
+  bool operator==(const CityString &other) const {
+    if (size != other.size) {
+      return false;
+    }
+    for (int i = 0; i < size / 32; i++) {
+      __m256i a = _mm256_loadu_si256((__m256i *)&name[i * 32]);
+      __m256i b = _mm256_loadu_si256((__m256i *)&other.name[i * 32]);
+      __m256i result = _mm256_cmpeq_epi8(a, b);
+      short bit_shift = (size - i * 32 > 32) ? 0 : 32 - size + i * 32;
+      int mask = _mm256_movemask_epi8(result) >> bit_shift;
+      if (mask != (std::pow(2, 32 - bit_shift) - 1)) {
+        return false;
+      }
+    }
+    return true;
+  }
+};
+
+class CityStringHashFn {
+public:
+  size_t operator()(const CityString &key) const {
+    unsigned long hash = 5381;
+    for (int i = 0; i < MAX_CITY_NAME_SIZE; i++) {
+      if (i >= key.size) {
+        break;
+      }
+      hash = ((hash << 5) + hash) + key.name[i];
+    }
+    return hash;
+  }
+};
 
 int get_number_from_chars(const char *c, char size) {
   __m128i numbers = _mm_setr_epi32(c[0], c[1], c[2], c[3]);
-  __m128i operations_vector = _mm_setr_epi32('0','0','0','0');
-	numbers = _mm_sub_epi32(numbers, operations_vector);
-	if (size == 4) {
-		__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(0, -100, -10, -1));
-		const int *results = (int *)&result;
-		return results[1] + results[2] + results[3];
-	}else if (size == 3) {
-		if (c[0] == '-') {
-			__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(0, -10, -1, 0));
-			const int *results = (int *)&result;
-			return results[1] + results[2];
-		} else {
-			__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(100, 10, 1, 0));
-			const int *results = (int *)&result;
-			return results[0] + results[1] + results[2];
-		}
-	}
-	__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(10, 1, 0, 0));
-	const int *results = (int *)&result;
-	return results[0] + results[1];
+  __m128i operations_vector = _mm_setr_epi32('0', '0', '0', '0');
+  numbers = _mm_sub_epi32(numbers, operations_vector);
+  if (size == 4) {
+    __m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(0, -100, -10, -1));
+    const int *results = (int *)&result;
+    return results[1] + results[2] + results[3];
+  } else if (size == 3) {
+    if (c[0] == '-') {
+      __m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(0, -10, -1, 0));
+      const int *results = (int *)&result;
+      return results[1] + results[2];
+    } else {
+      __m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(100, 10, 1, 0));
+      const int *results = (int *)&result;
+      return results[0] + results[1] + results[2];
+    }
+  }
+  __m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(10, 1, 0, 0));
+  const int *results = (int *)&result;
+  return results[0] + results[1];
 }
 
 long get_next_read_size(long current_index, long compute_end) {
@@ -51,21 +85,9 @@ long get_next_read_size(long current_index, long compute_end) {
   return next_read_size;
 }
 
-class HashFn {
-public:
-  size_t operator()(const std::string &key) const {
-    unsigned long hash = 5381;
-    for (int i = 0; i < MAX_CITY_NAME_SIZE; i++) {
-      if (i >= key.size()) {
-        break;
-      }
-      hash = ((hash << 5) + hash) + key[i];
-    }
-    return hash;
-  }
-};
-void thread_worker(std::unordered_map<std::string, City, HashFn> &cities,
-                   long read_start, long *compute_end, short thread_id) {
+void thread_worker(
+    std::unordered_map<CityString, City, CityStringHashFn> &cities,
+    long read_start, long *compute_end, short thread_id) {
   std::ifstream file("measurements.txt");
   file.seekg(read_start);
   std::streambuf *file_buffer = file.rdbuf();
@@ -88,7 +110,11 @@ void thread_worker(std::unordered_map<std::string, City, HashFn> &cities,
         } else {
           int temp = get_number_from_chars(working_temp_buffer, temp_counter);
           passed_semicolon = false;
-          std::string city_name(working_city_buffer, city_counter);
+          CityString city_name;
+          city_name.size = city_counter;
+          for (int j = 0; j < city_counter; j++) {
+            city_name.name[j] = working_city_buffer[j];
+          }
           auto city = cities.find(city_name);
           if (city == cities.end()) {
             City new_city;
@@ -128,7 +154,8 @@ void thread_worker(std::unordered_map<std::string, City, HashFn> &cities,
 
 int main() {
   const unsigned int THREADS = std::thread::hardware_concurrency();
-  std::unordered_map<std::string, City, HashFn> cities_threads[THREADS];
+  std::unordered_map<CityString, City, CityStringHashFn>
+      cities_threads[THREADS];
   for (int i = 0; i < THREADS; i++) {
     cities_threads[i].reserve(MAX_NUM_KEYS);
   }
@@ -161,9 +188,9 @@ int main() {
     }
   }
   for (auto &city : cities_threads[0]) {
-    std::cout << city.first << " " << city.second.sum << " "
-              << city.second.count << " " << city.second.max << " "
-              << city.second.min << std::endl;
+    std::cout << std::string(city.first.name, city.first.size) << " "
+              << city.second.sum << " " << city.second.count << " "
+              << city.second.max << " " << city.second.min << std::endl;
   }
   std::cout << "Finished Merging" << std::endl;
   delete[] threads;
