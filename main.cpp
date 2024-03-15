@@ -103,6 +103,9 @@ void thread_worker(
   bool passed_semicolon = false;
   bool first_newline_found = false;
   long buffer_index = read_start;
+	short batch_index = 0;
+	char temperature_batch[32];
+	CityString city_name_batch[32];
   while (buffer_index < compute_end[thread_id]) {
     long stream_size = file_buffer->sgetn(
         buffer, get_next_read_size(buffer_index, compute_end[thread_id]));
@@ -114,30 +117,11 @@ void thread_worker(
         } else {
           char temp = get_number_from_chars(working_temp_buffer, temp_counter);
           passed_semicolon = false;
-          CityString city_name;
-          city_name.size = city_counter;
+          city_name_batch[batch_index].size = city_counter;
           for (int j = 0; j < city_counter; j++) {
-            city_name.name[j] = working_city_buffer[j];
+            city_name_batch[batch_index].name[j] = working_city_buffer[j];
           }
-          auto city = cities.find(city_name);
-          if (city == cities.end()) {
-            City new_city;
-            new_city.sum = temp;
-            new_city.count = 1;
-            new_city.max = temp;
-            new_city.min = temp;
-            cities[city_name] = new_city;
-          } else {
-            City *found_city = &city->second;
-            found_city->sum += temp;
-            found_city->count++;
-            if (temp > found_city->max) {
-              found_city->max = temp;
-            }
-            if (temp < found_city->min) {
-              found_city->min = temp;
-            }
-          }
+					batch_index++;
         }
         city_counter = 0;
         temp_counter = 0;
