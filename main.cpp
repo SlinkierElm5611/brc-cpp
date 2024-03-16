@@ -53,31 +53,31 @@ public:
   }
 };
 
-char get_number_from_chars(const char *c, char size) {
-  __m128i numbers = _mm_setr_epi16(c[0], c[1], c[2], c[3], 0, 0, 0, 0);
-  __m128i operations_vector = _mm_setr_epi16('0', '0', '0', '0', 0, 0, 0, 0);
+int get_number_from_chars(const char *c, char size) {
+  __m128i numbers = _mm_setr_epi32(c[0], c[1], c[2], c[3]);
+  __m128i operations_vector = _mm_setr_epi32('0', '0', '0', '0');
   numbers = _mm_sub_epi32(numbers, operations_vector);
   if (size == 4) {
     __m128i result =
-        _mm_mullo_epi16(numbers, _mm_setr_epi16(0, -100, -10, -1, 0, 0, 0, 0));
-    const short *results = (short *)&result;
+        _mm_mullo_epi32(numbers, _mm_setr_epi32(0, -100, -10, -1));
+    const int *results = (int *)&result;
     return results[1] + results[2] + results[3];
   } else if (size == 3) {
     if (c[0] == '-') {
       __m128i result =
-          _mm_mullo_epi16(numbers, _mm_setr_epi16(0, -10, -1, 0, 0, 0, 0, 0));
-      const short *results = (short *)&result;
+          _mm_mullo_epi32(numbers, _mm_setr_epi32(0, -10, -1, 0));
+      const int *results = (int *)&result;
       return results[1] + results[2];
     } else {
       __m128i result =
-          _mm_mullo_epi16(numbers, _mm_setr_epi16(100, 10, 1, 0, 0, 0, 0, 0));
-      const short *results = (short *)&result;
+          _mm_mullo_epi32(numbers, _mm_setr_epi32(100, 10, 1, 0));
+      const int *results = (int *)&result;
       return results[0] + results[1] + results[2];
     }
   }
   __m128i result =
-      _mm_mullo_epi16(numbers, _mm_setr_epi16(10, 1, 0, 0, 0, 0, 0, 0));
-  const short *results = (short *)&result;
+      _mm_mullo_epi32(numbers, _mm_setr_epi32(10, 1, 0, 0));
+  const int *results = (int *)&result;
   return results[0] + results[1];
 }
 
@@ -112,7 +112,7 @@ void thread_worker(
           first_newline_found = true;
           compute_end[thread_id - 1] = i + buffer_index;
         } else {
-          char temp = get_number_from_chars(working_temp_buffer, temp_counter);
+          int temp = get_number_from_chars(working_temp_buffer, temp_counter);
           passed_semicolon = false;
           CityString city_name;
           city_name.size = city_counter;
