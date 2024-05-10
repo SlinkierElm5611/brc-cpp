@@ -1,4 +1,3 @@
-#include <cmath>
 #include <fstream>
 #include <immintrin.h>
 #include <iostream>
@@ -31,7 +30,7 @@ struct CityString {
       __m256i result = _mm256_cmpeq_epi8(a, b);
       short bit_shift = (size - i * 32 > 32) ? 0 : 32 - size + i * 32;
       int mask = _mm256_movemask_epi8(result) >> bit_shift;
-      if (mask != (std::pow(2, 32 - bit_shift) - 1)) {
+      if (mask != ((2<<(32-bit_shift)) - 1)) {
         return false;
       }
     }
