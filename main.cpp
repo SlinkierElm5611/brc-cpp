@@ -1,5 +1,9 @@
 #include <fstream>
+#ifdef __AVX2__
 #include <immintrin.h>
+#else
+#include "sse2neon.h"
+#endif
 #include <iostream>
 #include <streambuf>
 #include <string>
@@ -24,6 +28,7 @@ struct CityString {
     if (size != other.size) {
       return false;
     }
+#ifdef __AVX2__
     for (int i = 0; i < size / 32; i++) {
       __m256i a = _mm256_loadu_si256((__m256i *)&name[i * 32]);
       __m256i b = _mm256_loadu_si256((__m256i *)&other.name[i * 32]);
@@ -34,6 +39,18 @@ struct CityString {
         return false;
       }
     }
+#else
+    for (int i = 0; i < size / 16; i++) {
+      __m128i a = _mm_loadu_si128((__m128i *)&name[i * 16]);
+      __m128i b = _mm_loadu_si128((__m128i *)&other.name[i * 16]);
+      __m128i result = _mm_cmpeq_epi8(a, b);
+      short bit_shift = (size - i * 16 > 16) ? 0 : 16 - size + i * 16;
+      int mask = _mm_movemask_epi8(result) >> bit_shift;
+      if (mask != ((2<<(16-bit_shift)) - 1)) {
+        return false;
+      }
+    }
+#endif
     return true;
   }
 };
