@@ -1,5 +1,5 @@
 #include <fstream>
-#ifdef __AVX2__
+#ifdef __x86_64__
 #include <immintrin.h>
 #else
 #include "sse2neon.h"
@@ -28,7 +28,7 @@ struct CityString {
     if (size != other.size) {
       return false;
     }
-#ifdef __AVX2__
+#ifdef __x86_64__ 
     for (int i = 0; i < size / 32; i++) {
       __m256i a = _mm256_loadu_si256((__m256i *)&name[i * 32]);
       __m256i b = _mm256_loadu_si256((__m256i *)&other.name[i * 32]);
@@ -120,6 +120,7 @@ void thread_worker(
   bool first_newline_found = false;
   long buffer_index = read_start;
   while (buffer_index < compute_end[thread_id]) {
+		std::cout << static_cast<float>(buffer_index - read_start) / static_cast<float>(compute_end[thread_id] - read_start) << std::endl;
     long stream_size = file_buffer->sgetn(
         buffer, get_next_read_size(buffer_index, compute_end[thread_id]));
     for (long i = 0; i < stream_size; i++) {
