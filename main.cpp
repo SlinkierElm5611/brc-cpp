@@ -120,7 +120,6 @@ void thread_worker(
   bool first_newline_found = false;
   long buffer_index = read_start;
   while (buffer_index < compute_end[thread_id]) {
-		std::cout << static_cast<float>(buffer_index - read_start) / static_cast<float>(compute_end[thread_id] - read_start) << std::endl;
     long stream_size = file_buffer->sgetn(
         buffer, get_next_read_size(buffer_index, compute_end[thread_id]));
     for (long i = 0; i < stream_size; i++) {
