@@ -10,7 +10,7 @@
 #include <thread>
 #include <unordered_map>
 
-#define CHAR_BUFFER_SIZE 1000000
+#define CHAR_BUFFER_SIZE (8*4096)
 #define MAX_CITY_NAME_SIZE 100
 #define MAX_NUM_KEYS 10000
 
