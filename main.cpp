@@ -78,17 +78,15 @@ int32_t get_number_from_chars(const char *c, char size) {
     __m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(0, -100, -10, -1));
     const int32_t *results = (int32_t *)&result;
     return results[1] + results[2] + results[3];
-  } else if (size == 3) {
-    if (c[0] == '-') {
-      __m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(0, -10, -1, 0));
-      const int32_t *results = (int32_t *)&result;
-      return results[1] + results[2];
-    } else {
-      __m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(100, 10, 1, 0));
-      const int32_t *results = (int32_t *)&result;
-      return results[0] + results[1] + results[2];
-    }
-  }
+  } else if (c[0] == '-') {
+		__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(0, -10, -1, 0));
+		const int32_t *results = (int32_t *)&result;
+		return results[1] + results[2];
+	} else {
+		__m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(100, 10, 1, 0));
+		const int32_t *results = (int32_t *)&result;
+		return results[0] + results[1] + results[2];
+	}
   __m128i result = _mm_mullo_epi32(numbers, _mm_setr_epi32(10, 1, 0, 0));
   const int32_t *results = (int32_t *)&result;
   return results[0] + results[1];
